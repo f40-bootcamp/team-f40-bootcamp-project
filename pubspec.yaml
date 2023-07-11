@@ -67,6 +67,10 @@ flutter:
     - lib/assets/aPngtreeahand_drawn_cute_cat_reading_4361091.png
     - lib/assets/halka1.png
     - lib/assets/halka2.png
+    - lib/assets/sıralamakedisi.png
+    - lib/assets/birincilikk.png
+    - lib/assets/ikincilikk.png
+    - lib/assets/üçüncülükk.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
