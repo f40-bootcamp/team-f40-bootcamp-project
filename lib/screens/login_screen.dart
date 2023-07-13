@@ -11,9 +11,8 @@ class LoginPage extends StatefulWidget {
   final String password;
 
   LoginPage({String? email, String? password})
-      : email = email ?? '',  password= password??'';
-
-
+      : email = email ?? '',
+        password = password ?? '';
 
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -25,15 +24,13 @@ class _LoginPageState extends State<LoginPage> {
   late TextEditingController _emailController;
   late TextEditingController _passwordController;
 
-
   @override
   void initState() {
-
     super.initState();
-    _emailController = TextEditingController(text:widget.email);
-    _passwordController=TextEditingController(text: widget.password);
-
+    _emailController = TextEditingController(text: widget.email);
+    _passwordController = TextEditingController(text: widget.password);
   }
+
   //final TextEditingController _passwordController = TextEditingController();
   String _errorMessage = '';
   bool error = false;
@@ -43,8 +40,8 @@ class _LoginPageState extends State<LoginPage> {
     try {
       final String email = _emailController.text.trim();
       final String password = _passwordController.text.trim();
-      final UserCredential userCredential = await _auth
-          .signInWithEmailAndPassword(
+      final UserCredential userCredential =
+          await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -60,7 +57,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() {
         error = true;
         _errorMessage =
-        'Giriş yaparken bir hata oluştu. E-postanızı veya şifrenizi kontrol ediniz!';
+            'Giriş yaparken bir hata oluştu. E-postanızı veya şifrenizi kontrol ediniz!';
       });
       print(_errorMessage);
     }
@@ -69,22 +66,26 @@ class _LoginPageState extends State<LoginPage> {
   void _goToRegister() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => RegisterPage(userName: '', email: '',)),
+      MaterialPageRoute(
+          builder: (context) => RegisterPage(
+                userName: '',
+                email: '',
+              )),
     );
   }
 
   Future<void> _signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      final GoogleSignInAuthentication? googleAuth = await googleUser
-          ?.authentication;
+      final GoogleSignInAuthentication? googleAuth =
+          await googleUser?.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth?.accessToken,
         idToken: googleAuth?.idToken,
       );
 
-      final UserCredential userCredential = await FirebaseAuth.instance
-          .signInWithCredential(credential);
+      final UserCredential userCredential =
+          await FirebaseAuth.instance.signInWithCredential(credential);
       final User? user = userCredential.user;
 
       if (user != null) {
@@ -101,13 +102,13 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-@override
-
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -166,11 +167,11 @@ class _LoginPageState extends State<LoginPage> {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     decoration: const InputDecoration(
                       labelText: 'E-posta',
-                      labelStyle: TextStyle(
-                          color: Color.fromRGBO(170, 170, 170, 1)),
+                      labelStyle:
+                          TextStyle(color: Color.fromRGBO(170, 170, 170, 1)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(
-                          horizontal: 15, vertical: 30),
+                      contentPadding:
+                          EdgeInsets.symmetric(horizontal: 15, vertical: 30),
                       floatingLabelBehavior: FloatingLabelBehavior.never,
                     ),
                   ),
@@ -204,8 +205,9 @@ class _LoginPageState extends State<LoginPage> {
                           horizontal: 15, vertical: 30),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _passwordVisible ? Icons.visibility_off : Icons
-                              .visibility,
+                          _passwordVisible
+                              ? Icons.visibility_off
+                              : Icons.visibility,
                         ),
                         onPressed: () {
                           setState(() {
@@ -233,7 +235,6 @@ class _LoginPageState extends State<LoginPage> {
                           style: const TextStyle(
                             color: Color.fromRGBO(135, 142, 205, 1),
                           ),
-
                         ),
                       ],
                     ),
@@ -241,21 +242,22 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 10.0),
                 ElevatedButton(
                   style: ButtonStyle(
-                    backgroundColor:
-                    MaterialStateProperty.all(const Color.fromRGBO(135, 142, 205, 1)),
+                    backgroundColor: MaterialStateProperty.all(
+                        const Color.fromRGBO(135, 142, 205, 1)),
                     foregroundColor: MaterialStateProperty.all(Colors.white),
                     padding: MaterialStateProperty.all(
-                      const EdgeInsets.symmetric(vertical: 18.0, horizontal: 40.0),
+                      const EdgeInsets.symmetric(
+                          vertical: 18.0, horizontal: 40.0),
                     ),
                     textStyle: MaterialStateProperty.all(
-                      const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                      const TextStyle(
+                          fontSize: 20.0, fontWeight: FontWeight.bold),
                     ),
                     shape: MaterialStateProperty.all(
                       RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(51.16),
                       ),
                     ),
-
                   ),
                   onPressed: _login,
                   child: const Text('Giriş Yap'),
@@ -284,7 +286,7 @@ class _LoginPageState extends State<LoginPage> {
                     backgroundColor: MaterialStateProperty.all(Colors.red),
                     foregroundColor: MaterialStateProperty.all(Colors.white),
                     padding: MaterialStateProperty.all(
-                      EdgeInsets.symmetric(vertical: 15.0, horizontal:15.0),
+                      EdgeInsets.symmetric(vertical: 15.0, horizontal: 15.0),
                     ),
                     textStyle: MaterialStateProperty.all(
                       TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold),
@@ -302,13 +304,11 @@ class _LoginPageState extends State<LoginPage> {
                       Icon(
                         FontAwesomeIcons.google,
                         size: 18.0,
-
                       ),
                       SizedBox(width: 10.0),
                       Text('Google ile Giriş Yap'),
                     ],
                   ),
-
                 ),
                 SizedBox(height: 10.0),
                 Row(
@@ -336,7 +336,6 @@ class _LoginPageState extends State<LoginPage> {
                   ],
                 ),
               ],
-
             ),
           ),
         ),

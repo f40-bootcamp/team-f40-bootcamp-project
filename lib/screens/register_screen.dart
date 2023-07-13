@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:read_reminder/screens/timer_screen.dart';
 import 'login_screen.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -65,6 +67,10 @@ class _RegisterPageState extends State<RegisterPage> {
                       email: _emailController.text,
                       password: _passwordController.text,
                     )));
+        CoinProvider coinProvider =
+            Provider.of<CoinProvider>(context, listen: false);
+        coinProvider
+            .getUsersCoin(); //to assign the 0 coin in the app for new registered user.
       }
     } catch (e) {
       setState(() {
@@ -115,6 +121,7 @@ class _RegisterPageState extends State<RegisterPage> {
             'username': _userNameController.text,
             'currentPoint': 0,
             'lastReadDate': DateTime.now(),
+            'profileImage': '',
             'totalTime': 0,
             'userId': _auth.currentUser!.uid,
             'donationCount': 0

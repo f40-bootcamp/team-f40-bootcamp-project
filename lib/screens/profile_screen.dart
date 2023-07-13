@@ -222,7 +222,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     backgroundImage: profileImageURL != null
                         ? NetworkImage(profileImageURL!)
                         : null,
-                    child: profileImageURL == null
+                    child: profileImageURL == ""
                         ? Icon(Icons.add_a_photo,
                             size: 50, color: Colors.grey[300])
                         : null,
