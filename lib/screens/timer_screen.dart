@@ -322,7 +322,7 @@ class _RotatingImagesState extends State<RotatingImages>
                         Provider.of<CoinProvider>(context, listen: false);
                     TimeProvider timeProvider =
                         Provider.of<TimeProvider>(context, listen: false);
-                    if (hours < 1) {
+                    if (minutes < 1) {
                       coinProvider.increaseCoin(0);
                       timeProvider.increaseTime(0);
                     }
@@ -344,7 +344,7 @@ class _RotatingImagesState extends State<RotatingImages>
 
                     if (!(userId != null && widget.bookName == "")) {
                       //*hours olacak, kontrol amacli 'minutes' yapilabilir.
-                      coinProvider.increaseCoin(hours * 100);
+                      coinProvider.increaseCoin(minutes * 100);
                       timeProvider.increaseTime(hours);
 
                       addOrUpdateUserBook(); //*

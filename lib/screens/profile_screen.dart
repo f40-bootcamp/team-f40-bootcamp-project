@@ -1,10 +1,14 @@
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:read_reminder/screens/donateList_screen.dart';
 import 'login_screen.dart';
 import 'timer_screen.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -14,19 +18,163 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String userEmail = '';
+  //String userEmail = '';
+  String username = "";
+  int totalFocusedTime = 0;
+  int donationCount = 0;
+  int orderOfUser = 0;
+
+  int coinOfUser = 0;
+  bool isDonationEnabled = false;
+  User? user = FirebaseAuth.instance.currentUser;
+
+  //File? _selectedImage;
+  String? profileImageURL;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedImage = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedImage != null) {
+      setState(() {
+        profileImageURL =
+            pickedImage.path; // Reset the profile image URL while uploading
+      });
+      final File imageFile = File(pickedImage.path);
+      await _uploadProfileImage(imageFile);
+    }
+  }
+
+  Future<void> _uploadProfileImage(File file) async {
+    try {
+      String? userId = user?.uid;
+      if (userId != null) {
+        final storageRef = FirebaseStorage.instance
+            .ref()
+            .child('profile_images')
+            .child('${DateTime.now().microsecondsSinceEpoch}.jpg');
+        await storageRef.putFile(file!);
+        final downloadURL = await storageRef.getDownloadURL();
+        CollectionReference usersCollection =
+            FirebaseFirestore.instance.collection('users');
+        QuerySnapshot querySnapshot =
+            await usersCollection.where('userId', isEqualTo: userId).get();
+        if (querySnapshot.docs.isNotEmpty) {
+          DocumentSnapshot userDoc = querySnapshot.docs.first;
+          DocumentReference userDocRef = userDoc.reference;
+          await userDocRef.update({'profileImage': downloadURL});
+          //To show the selected and saved profile image immediately;
+          setState(() {
+            profileImageURL = downloadURL;
+          });
+        }
+      }
+    } catch (error) {
+      print(error);
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _getCurrentUser();
+    _getUserInfos();
   }
 
-  Future<void> _getCurrentUser() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
+  Future<void> _getUserInfos() async {
+    String? userId = user?.uid;
+    if (userId != null) {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('userId', isEqualTo: userId)
+          .get();
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot userDoc = querySnapshot.docs.first;
+        Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+        int fetchedOrder = await _getUserOrder();
+        setState(() {
+          username = userData['username'];
+          totalFocusedTime = (userData['totalTime'] / 60).toInt();
+          donationCount = userData['donationCount'];
+          coinOfUser = userData['currentPoint'];
+          orderOfUser = fetchedOrder;
+          profileImageURL = userData['profileImage'];
+        });
+        _checkDonationCondition(); //to assign the availability of making a donation.
+      } else {
+        print("Related record does not exist for the logined user!");
+      }
+    }
+  }
+
+  //Gets the user order for the donation list;
+  Future<int> _getUserOrder() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    String? userId = user?.uid;
+    int userOrder = 0;
+    if (userId != null) {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('donationList')
+          .where('userId', isEqualTo: userId)
+          .get();
+      if (querySnapshot.docs.isNotEmpty) {
+        DocumentSnapshot donationDoc = querySnapshot.docs.first;
+        Map<String, dynamic> donationData =
+            donationDoc.data() as Map<String, dynamic>;
+        userOrder = donationData['listOrder'];
+      } else {
+        print("Related record does not exist for the logined user!");
+      }
+    }
+    return userOrder;
+  }
+
+  //Making a donation if the coin of user is sufficient;
+  Future<void> makeDonation() async {
+    String? userId = user?.uid;
+    if (userId != null) {
+      CollectionReference usersCollection =
+          FirebaseFirestore.instance.collection('users');
+      try {
+        QuerySnapshot querySnapshot =
+            await usersCollection.where('userId', isEqualTo: userId).get();
+        if (querySnapshot.docs.isNotEmpty) {
+          DocumentSnapshot userDoc = querySnapshot.docs.first;
+          Map<String, dynamic> userData =
+              userDoc.data() as Map<String, dynamic>;
+          int currentDonationCount = userData['donationCount'];
+          int currentCoin = userData['currentPoint'];
+          DocumentReference userDocRef = userDoc.reference;
+          userDocRef.update({
+            'donationCount': currentDonationCount + 1,
+            'currentPoint': (currentCoin - 2000)
+          });
+          CoinProvider coinProvider =
+              Provider.of<CoinProvider>(context, listen: false);
+          coinProvider
+              .getUsersCoin(); //updated coin value from the db will be fetched.
+          await _getUserInfos(); //to fetch the updated user infos.
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Bağış yapıldı!'),
+              backgroundColor: Colors.grey[800],
+              duration: Duration(seconds: 2)),
+        );
+      } catch (error) {
+        print(error);
+      }
+    }
+  }
+
+  //Checks the current coin of user to decide whether suitable to make a donation or not;
+  void _checkDonationCondition() {
+    if (coinOfUser < 2000) {
+      print('$coinOfUser deneme123!!!');
       setState(() {
-        userEmail = currentUser.email ?? 'Email alınamadı!';
+        isDonationEnabled = false;
+      });
+    } else {
+      setState(() {
+        isDonationEnabled = true;
       });
     }
   }
@@ -65,16 +213,26 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ],
                 ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundImage: AssetImage(
-                    'lib/assets/background/bg_profile.png',
-                  ), // Kullanıcı resminin yolunu güncelleyin
+                child: GestureDetector(
+                  onTap: () {
+                    _pickImage();
+                  },
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: profileImageURL != null
+                        ? NetworkImage(profileImageURL!)
+                        : null,
+                    child: profileImageURL == null
+                        ? Icon(Icons.add_a_photo,
+                            size: 50, color: Colors.grey[300])
+                        : null,
+                    //AssetImage('lib/assets/background/bg_profile.png',)
+                  ),
                 ),
               ),
               SizedBox(height: 16),
               Text(
-                userEmail,
+                username,
                 style: TextStyle(
                   color: Color.fromRGBO(54, 56, 84, 1.0),
                   fontSize: 24,
@@ -114,7 +272,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ],
                               ),
                             ),
-                            SizedBox(width: 5,),
+                            SizedBox(
+                              width: 5,
+                            ),
                             Icon(
                               FontAwesomeIcons.clock,
                               size: 14,
@@ -122,12 +282,14 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 10,),
+                        SizedBox(
+                          height: 10,
+                        ),
                         Consumer<TimeProvider>(
                           builder: (context, timeProvider, _) {
-                            int time = timeProvider.time;
+                            //int time = timeProvider.time;
                             return Text(
-                              '$time saat',
+                              '$totalFocusedTime saat',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Color.fromRGBO(69, 74, 113, 1.0),
@@ -140,7 +302,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                   ),
-                  SizedBox(width: MediaQuery.of(context).size.width * 0.1,),
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.1,
+                  ),
                   Container(
                     height: 100,
                     width: MediaQuery.of(context).size.width * 0.35,
@@ -148,7 +312,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       borderRadius: BorderRadius.circular(20),
                       color: Colors.transparent,
                     ),
-                    child: const Column(
+                    child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Row(
@@ -170,7 +334,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ],
                               ),
                             ),
-                            SizedBox(width: 5,),
+                            SizedBox(
+                              width: 5,
+                            ),
                             Icon(
                               FontAwesomeIcons.book,
                               size: 14,
@@ -178,9 +344,11 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 10,),
+                        SizedBox(
+                          height: 10,
+                        ),
                         Text(
-                          '16',
+                          '$donationCount',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Color.fromRGBO(69, 74, 113, 1.0),
@@ -223,8 +391,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
-                                '38.',
+                              Text(
+                                '$orderOfUser',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Color.fromRGBO(69, 74, 113, 1.0),
@@ -248,16 +416,21 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 30,),
+              const SizedBox(
+                height: 30,
+              ),
               ElevatedButton(
                 style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(const Color.fromRGBO(135, 142, 205, 1)),
+                  backgroundColor: MaterialStateProperty.all(
+                      const Color.fromRGBO(135, 142, 205, 1)),
                   foregroundColor: MaterialStateProperty.all(Colors.white),
                   padding: MaterialStateProperty.all(
-                    const EdgeInsets.symmetric(vertical: 13.0, horizontal: 35.0),
+                    const EdgeInsets.symmetric(
+                        vertical: 13.0, horizontal: 35.0),
                   ),
                   textStyle: MaterialStateProperty.all(
-                    const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+                    const TextStyle(
+                        fontSize: 20.0, fontWeight: FontWeight.bold),
                   ),
                   shape: MaterialStateProperty.all(
                     RoundedRectangleBorder(
@@ -266,7 +439,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 onPressed: () {
-                  showDialog(
+                  /*showDialog(
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
@@ -286,7 +459,16 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       );
                     },
-                  );
+                  );*/
+                  isDonationEnabled
+                      ? makeDonation()
+                      : ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  'Bağış yapmak için yeterli coininiz bulunmamaktadır!'),
+                              backgroundColor: Colors.grey[800],
+                              duration: Duration(seconds: 2)),
+                        );
                 },
                 child: const Text(
                   'BAĞIŞ YAP',
@@ -298,7 +480,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 30,),
+              const SizedBox(
+                height: 30,
+              ),
               TextButton(
                 onPressed: () {
                   _signOut();
