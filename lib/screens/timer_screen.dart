@@ -313,7 +313,7 @@ class _RotatingImagesState extends State<RotatingImages>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               const SizedBox(
-                height: 50,
+                height: 30,
               ),
               Text(
                 getTimerText(),
@@ -400,7 +400,7 @@ class _RotatingImagesState extends State<RotatingImages>
                     _toggleRotation();
                     CoinProvider coinProvider =
                     Provider.of<CoinProvider>(context, listen: false);
-                      print('timer started');
+                    print('timer started');
                     timer = Timer.periodic(Duration(seconds: choosen), (timer) {
                       setState(() {
                         timer.cancel();
@@ -425,12 +425,12 @@ class _RotatingImagesState extends State<RotatingImages>
                             coinProvider.increaseCoin(hourtime*100);
                           }
                           addOrUpdateUserBook(); //*
-                          updateReadInfos(minutes);
-                          addReadRecords(minutes);
+                          updateReadInfos(passedTime);
+                          addReadRecords(passedTime);
                           fetchTodaysReadingTime(); //*
                         }
                       });
-                      });
+                    });
 
                     print('timer finished');
 
@@ -535,7 +535,7 @@ class _RotatingImagesState extends State<RotatingImages>
               ),
               Text(
                 //'En son geÃ§en sÃ¼re: ${hours1} s ${minutes1} dk ',
-                'BugÃ¼n $totalReadingTime dakika boyunca kitap okudunuz', //TODO:users altindan toplam sure ve son okuma tarihine gore cekilip farkina gore gosterilecek.
+                'Bugün $totalReadingTime dakika boyunca kitap okudunuz', //TODO:users altindan toplam sure ve son okuma tarihine gore cekilip farkina gore gosterilecek.
                 style: const TextStyle(
                     fontSize: 16,
                     fontStyle: FontStyle.italic,

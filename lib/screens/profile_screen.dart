@@ -211,8 +211,8 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 159,
-                height: 159,
+                width: 140,
+                height: 140,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   boxShadow: [
@@ -462,8 +462,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   _goToFav();
                                 },
                                 icon: const Icon(
-                                  FontAwesomeIcons.caretRight,
-                                  size: 24,
+                                  FontAwesomeIcons.heartCircleCheck,
+                                  size: 18,
                                   color: Color.fromRGBO(117, 125, 185, 1),
                                 ),
                               )
@@ -496,28 +496,17 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                            child: const Text(
-                              'Bağış yapıldı',
-                              style: TextStyle(
-                                color: Color.fromRGBO(69, 74, 113, 1.0),
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                  isDonationEnabled
+                  ? makeDonation()
+                      : ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                  content: Text(
+                  'Bağış yapmak için yeterli coininiz bulunmamaktadır!'),
+                  backgroundColor: Colors.grey[800],
+                  duration: Duration(seconds: 2)),
                   );
-                },
+                  },
+
                 child: const Text(
                   'BAĞIŞ YAP',
                   textAlign: TextAlign.center,

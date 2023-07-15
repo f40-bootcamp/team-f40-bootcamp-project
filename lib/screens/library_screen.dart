@@ -47,12 +47,44 @@ class _LibraryScreenState extends State<LibraryScreen> {
     var userId = await _getCurrentUser();
     var bookName = '$title by $author';
 
-    await _favoritesCollection.add({
-      'userId': userId,
-      'bookName': bookName,
-    });
+    var isBookExist = await _checkIfBookExists(userId, bookName);
+    if (!isBookExist) {
+      await _favoritesCollection.add({
+        'userId': userId,
+        'bookName': bookName,
+      });
 
-    _loadFavoritesBooks();
+      _loadFavoritesBooks();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kitap favorilere eklendi'),
+          backgroundColor: Colors.grey[800],
+          duration: const Duration(seconds: 2),
+          action: SnackBarAction(
+            label: 'Geri al',
+            onPressed: () {
+              removeFromFavorites(title, author);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Kitap favorilerden kaldırıldı'),
+                  backgroundColor: Colors.grey[800],
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Kitap favorilerde mevcut'),
+          backgroundColor: Colors.grey[800],
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   Future<void> removeFromFavorites(String title, String author) async {
@@ -86,7 +118,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         var author = bookName.split(' by ')[1];
         return Book(title, author);
       } else {
-        throw Exception('Data is null or has invalid format!!!');
+        throw Exception('Data is null or has an invalid format!!!');
       }
     }).toList();
 
@@ -117,6 +149,19 @@ class _LibraryScreenState extends State<LibraryScreen> {
       throw Exception(
           'API çağrısı başarısız oldu. Hata kodu: ${response.statusCode}');
     }
+  }
+
+  Future<bool> _checkIfBookExists(String userId, String bookName) async {
+    var snapshot = await _favoritesCollection
+        .where('userId', isEqualTo: userId)
+        .where('bookName', isEqualTo: bookName)
+        .get();
+
+    return snapshot.docs.isNotEmpty;
+  }
+
+  bool isBookInFavorites(String title, String author) {
+    return favoritesBooks.contains(Book(title, author));
   }
 
   @override
@@ -162,10 +207,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         var bookList = snapshot.data;
                         var randomBookIndex = random.nextInt(bookList!.length);
                         var randomBook = bookList[randomBookIndex];
-                        var randomBookTitle = randomBook['volumeInfo']['title'];
-                        var randomBookAuthor = randomBook['volumeInfo']
-                        ['authors'][0] ??
-                            'Yazar bilgisi mevcut değil';
+                        var randomBookTitle =
+                        randomBook['volumeInfo']['title'];
+                        var randomBookAuthor =
+                            randomBook['volumeInfo']['authors'][0] ??
+                                'Yazar bilgisi mevcut değil';
                         var randomImageLinks =
                         randomBook['volumeInfo']['imageLinks'] != null
                             ? randomBook['volumeInfo']['imageLinks']
@@ -206,7 +252,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       } else if (snapshot.hasError) {
                         return Text('Hata: ${snapshot.error}');
                       }
-                      return const CircularProgressIndicator(color: Color.fromRGBO(69, 74, 113, 1.0)  ,);
+                      return const CircularProgressIndicator();
                     },
                   ),
                 ],
@@ -239,11 +285,25 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             return ListView.builder(
                               itemCount: bookList!.length,
                               itemBuilder: (context, index) {
+
                                 var book = bookList[index];
                                 var title = book['volumeInfo']['title'];
-                                var subtitle = book['volumeInfo']['authors']
-                                [0] ??
-                                    'Yazar bilgisi mevcut değil';
+                                var subtitle =
+                                    book['volumeInfo']['authors'][0] ??
+                                        'Yazar bilgisi mevcut değil';
+                                favButtonStatus = isBookInFavorites(title, subtitle);
+                                IconButton button = IconButton(
+                                  icon: favButtonStatus
+                                      ? const Icon(Icons.favorite_border)
+                                      : const Icon(Icons.favorite),
+                                  onPressed: () {
+                                    if (isBookInFavorites(title, subtitle)) {
+                                      removeFromFavorites(title, subtitle);
+                                    } else {
+                                      addToFavorites(title, subtitle);
+                                    }
+                                  },
+                                );
                                 var imageLinks =
                                 book['volumeInfo']['imageLinks'] != null
                                     ? book['volumeInfo']['imageLinks']
@@ -251,30 +311,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                     : 'https://placekitten.com/600/800';
 
                                 return ListTile(
-                                  leading: IconButton(
-                                    icon: const Icon(Icons.favorite_border),
-                                    onPressed: () {
-                                      if (favoritesBooks
-                                          .contains(Book(title, subtitle))) {
-                                        removeFromFavorites(title, subtitle);
-                                      } else {
-                                        addToFavorites(title, subtitle);
-                                      }
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Kitap favorilere eklendi'),
-                                          backgroundColor: Colors.grey[800],
-                                          duration: Duration(seconds: 2),
-                                          action: SnackBarAction(
-                                            label: 'Geri al',
-                                            onPressed: () {
-                                              // Code to undo the action
-                                            },
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                  leading: button,
                                   title: Text(
                                     title,
                                     style: const TextStyle(
@@ -303,7 +340,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                CircularProgressIndicator(color: Color.fromRGBO(69, 74, 113, 1.0)  ,),
+                                CircularProgressIndicator(),
                                 SizedBox(height: 16),
                                 Text('Veriler Yükleniyor'),
                               ],

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:read_reminder/screens/notification_screen.dart';
 import '../navigation/bottom_navigation_bar.dart';
 import '../notification_demo_screen.dart';
 import 'message_screen.dart';
@@ -33,7 +32,7 @@ class FeedPage extends StatelessWidget {
           ),
           IconButton(
               onPressed: () {},
-              icon: Icon(FontAwesomeIcons.fire,size: 20, color:Color.fromRGBO(
+              icon: Icon(FontAwesomeIcons.fire,size: 18, color:Color.fromRGBO(
                   82, 87, 124, 1.0))
           ),
         ],
